@@ -60,7 +60,7 @@ module DockerCookbook
       # https://github.com/chef/chef/issues/4103
       def version_string(v)
         ubuntu_prefix = if Gem::Version.new(v) > Gem::Version.new('1.12.3')
-                          'ubuntu-'
+                          'ubuntu1~'
                         else
                           ''
                         end
@@ -81,7 +81,7 @@ module DockerCookbook
         return "#{v}-0~#{ubuntu_prefix}trusty" if trusty?
         return "#{v}-0~#{ubuntu_prefix}vivid" if vivid?
         return "#{v}-0~#{ubuntu_prefix}wily" if wily?
-        return "#{v}-0~#{ubuntu_prefix}xenial" if xenial?
+        return "#{v}-0#{ubuntu_prefix}16.04.1" if xenial?
         v
       end
 
@@ -94,6 +94,7 @@ module DockerCookbook
 
       def default_package_name
         return 'docker' if amazon?
+	return 'docker.io' if xenial?
         'docker-engine'
       end
 
