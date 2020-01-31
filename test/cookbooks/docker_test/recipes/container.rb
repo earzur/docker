@@ -420,7 +420,7 @@ end
 
 # Inspect volume container with test-kitchen bussers
 docker_container 'sean_was_here' do
-  command "touch /opt/chef/sean_was_here-#{Time.new.strftime('%Y%m%d%H%M')}" #
+  command "touch /opt/chef/sean_was_here-#{Time.new.strftime('%Y%m%d%H%M')}"
   repo 'debian'
   volumes_from 'chef_container'
   autoremove true
@@ -430,6 +430,45 @@ end
 
 # marker to prevent :run on subsequent converges.
 file '/marker_container_sean_was_here' do
+  action :create
+end
+
+#########
+# :detach
+#########
+
+# Inspect volume container with test-kitchen bussers
+docker_container 'attached' do
+  command "touch /opt/chef/attached-#{Time.new.strftime('%Y%m%d%H%M')}"
+  repo 'debian'
+  volumes_from 'chef_container'
+  detach false
+  not_if { ::File.exist?('/marker_container_attached') }
+  action :run
+end
+
+# marker to prevent :run on subsequent converges.
+file '/marker_container_attached' do
+  action :create
+end
+
+######################
+# :detach with timeout
+######################
+
+# Inspect volume container with test-kitchen bussers
+docker_container 'attached_with_timeout' do
+  command "sleep 15 && touch /opt/chef/attached_with_timeout-#{Time.new.strftime('%Y%m%d%H%M')}"
+  repo 'debian'
+  volumes_from 'chef_container'
+  detach false
+  timeout 10
+  not_if { ::File.exist?('/marker_container_attached_with_timeout') }
+  action :run
+end
+
+# marker to prevent :run on subsequent converges.
+file '/marker_container_attached_with_timeout' do
   action :create
 end
 
@@ -984,6 +1023,32 @@ docker_container 'kill_after' do
   action :stop
 end
 
+######
+# oom_kill_disable
+######
+
+docker_container 'oom_kill_disable' do
+  repo 'alpine'
+  tag '3.1'
+  command 'ls -la'
+  oom_kill_disable true
+  timeout 40
+  action :run_if_missing
+end
+
+######
+# oom_score_adj
+######
+
+docker_container 'oom_score_adj' do
+  repo 'alpine'
+  tag '3.1'
+  command 'ls -la'
+  oom_score_adj 600
+  timeout 40
+  action :run_if_missing
+end
+
 ##########
 # pid_mode
 ##########
@@ -993,6 +1058,7 @@ docker_container 'pid_mode' do
   tag '3.1'
   command 'ps -ef'
   pid_mode 'host'
+  timeout 40
   action :run_if_missing
 end
 
@@ -1006,6 +1072,7 @@ docker_container 'init' do
   tag '3.1'
   command 'ls -la'
   init true
+  timeout 40
   action :run_if_missing
 end
 
@@ -1018,6 +1085,7 @@ docker_container 'ipc_mode' do
   tag '3.1'
   command 'ps -ef'
   ipc_mode 'host'
+  timeout 40
   action :run_if_missing
 end
 
@@ -1030,6 +1098,7 @@ docker_container 'uts_mode' do
   tag '3.1'
   command 'ps -ef'
   uts_mode 'host'
+  timeout 40
   action :run_if_missing
 end
 
@@ -1042,6 +1111,7 @@ docker_container 'ro_rootfs' do
   tag '3.1'
   command 'ps -ef'
   ro_rootfs true
+  timeout 40
   action :run_if_missing
 end
 
@@ -1055,6 +1125,7 @@ docker_container 'sysctls' do
   command '/sbin/sysctl -a'
   sysctls 'net.core.somaxconn' => '65535',
           'net.core.xfrm_acq_expires' => '42'
+  timeout 40
   action :run_if_missing
 end
 
@@ -1138,9 +1209,30 @@ docker_container 'memory' do
   command 'nc -ll -p 70 -e /bin/cat'
   port '71:71'
   kernel_memory '10m'
-  memory '5m'
-  memory_swap '5M'
-  memory_swappiness '50'
-  memory_reservation '5m'
+  memory '50m'
+  memory_swap '60M' # must be larger than memory
+  memory_swappiness 50
+  memory_reservation '50m'
+  shm_size '32m'
+  action :run
+end
+
+################
+# health_check
+################
+
+docker_container 'health_check' do
+  repo 'alpine'
+  tag '3.1'
+  health_check(
+    'Test' =>
+      [
+        'string',
+      ],
+    'Interval' => 0,
+    'Timeout' => 0,
+    'Retries' => 0,
+    'StartPeriod' => 0
+  )
   action :run
 end
